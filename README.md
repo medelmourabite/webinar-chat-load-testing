@@ -1,1 +1,0 @@
-webinar-load-test
