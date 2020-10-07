@@ -1,10 +1,9 @@
 var config = require("./config");
 var redline = require('redline13-webdriver');
-var utils = require('./utils');
 var yargs = require('yargs');
 var LoremIpsum = require("lorem-ipsum").LoremIpsum;
 
-var {TOKEN, ENV, USER_ID, MAX_ITERATION, TEST_CHANNEL} = config;
+var {ENV, EMAIL, PASSWORD, MAX_ITERATION, TEST_CHANNEL} = config;
 
 var lorem = new LoremIpsum({
   sentencesPerParagraph: {
@@ -18,15 +17,15 @@ var lorem = new LoremIpsum({
 });
 
 const argv = yargs
-  .option('token', {
-    alias: 't',
-    description: 'Auth token',
+  .option('email', {
+    alias: 'e',
+    description: 'User email',
     type: 'string',
   })
-  .option('uid', {
-    alias: 'i',
-    description: 'User id',
-    type: 'number',
+  .option('password', {
+    alias: 'p',
+    description: 'User password',
+    type: 'string',
   })
   .option('env', {
     alias: 'e',
@@ -47,8 +46,8 @@ const argv = yargs
   .alias('help', 'h')
   .argv;
 
-var userId = argv["uid"] || USER_ID;
-var token = argv["token"] || TOKEN;
+var email = argv["emil"] || EMAIL;
+var password = argv["password"] || PASSWORD;
 var env = argv["env"] || ENV;
 var maxIter = argv["max-iter"] || MAX_ITERATION;
 
@@ -62,34 +61,32 @@ var browser = redline.loadBrowser('firefox');
 
 var By = redline.webdriver.By;
 var until = redline.webdriver.until;
+var Key = redline.webdriver.Key;
 
-browser.get(homeUrl);
-browser.manage().addCookie({
-  'name'     : 'ttp_auth_' + env,   /* required property */
-  'value'    : utils.getValidAuth(token, userId),  /* required property */
-  'domain'   : '.tamtam.pro',
-  'path'     : '/',                /* required property */
-  // 'httponly' : true,
-  // 'secure'   : false,
-  'expiry'  : (new Date()).getTime()/1000 + 60*60*10   /* <-- expires in 1 hour */
-});
+async function run() {
+  await browser.get(homeUrl);
+  await browser.wait(until.elementLocated(By.name("email")));
+  await browser.findElement(By.name("email")).sendKeys(email);
+  await browser.wait(until.elementLocated(By.name("password")));
+  await browser.findElement(By.name("password")).sendKeys(password);
+  await browser.findElement(By.id("sign-in-button")).click();
 
-var textArea = By.name('msg');
-var sendBtn = By.className('rc-message-box__send');
+  var textArea = await By.name('msg');
 
-browser.get(webinarUrl);
-browser.wait(until.elementLocated(By.className('page-container')));
-browser.get(webinarUrl + "/channel/" + testChannel);
+  await browser.wait(until.urlContains("landing"));
+  await browser.get(webinarUrl);
+  await browser.wait(until.urlContains("home"));
+  await browser.get(webinarUrl + "/channel/" + testChannel);
 
-browser.manage().timeouts().implicitlyWait(30000);
+  await browser.manage().timeouts().implicitlyWait(30000);
 
-for (var i = 0; i < maxIter; i++) {
-  var message = lorem.generateSentences(Math.floor(Math.random() * 4));
-  browser.wait(until.elementLocated(textArea));
-  browser.findElement(textArea).sendKeys(message);
-  browser.findElement(textArea).sendKeys('.');
-  browser.wait(until.elementLocated(sendBtn));
-  browser.findElement(sendBtn).click();
-  browser.sleep(Math.floor(Math.random() * 10000));
+  for (var i = 0; i < maxIter; i++) {
+    var message = lorem.generateSentences(Math.floor(Math.random() * 4));
+    await browser.wait(until.elementLocated(textArea));
+    var input = await browser.findElement(textArea);
+    await input.sendKeys(message, Key.ENTER);
+  }
+  await browser.quit();
 }
-browser.quit();
+
+run();
