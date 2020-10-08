@@ -4,6 +4,10 @@ var config = {
   "ENV": "local",
   "MAX_ITERATION": 10,
   "TEST_CHANNEL": "general",
+  "EMAIL_PREFIX": "webinar-test-",
+  "EMAIL_SUFFIX": "@mail.com",
+  "DEFAULT_PASSWORD": "123456789",
+  "CHANNELS": ["general"],
   "local": {
     "WEBINAR_URL": "http://local.webinar-chat.tamtam.pro:3000",
     "HOME_URL": "http://local.home.tamtam.pro",
